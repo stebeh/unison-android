@@ -1,0 +1,92 @@
+<!--
+  ~ Copyright 2018 The app Open Source Project
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<androidx.preference.PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory app:title="Control">
+
+        <Preference
+            app:key="status"
+            app:title="Status" />
+
+        <Preference
+            app:key="pause"
+            app:title="Pause" />
+
+        <Preference
+            app:key="restart"
+            app:title="Restart" />
+
+        <Preference
+            app:key="quit"
+            app:title="Quit" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="History">
+
+        <Preference
+            app:key="recent"
+            app:title="Recent file changes" />
+
+        <Preference
+            app:key="log"
+            app:title="View log file" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Settings">
+
+        <CheckBoxPreference
+            app:key="auto_restart"
+            app:defaultValue="true"
+            app:title="Automatically reconnect"
+            app:summary="Restart when connection is lost" />
+
+        <ListPreference
+            app:key="restart_delay"
+            app:entries="@array/delay_vals"
+            app:entryValues="@array/delay_vals"
+            app:defaultValue="30"
+            app:title="Reconnect delay (s)"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="auto_restart" />
+
+        <!--
+        <CheckBoxPreference
+            app:key="auto_pause"
+            app:defaultValue="true"
+            app:title="Pause when Wi-Fi unavailable" />
+            -->
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Help">
+
+        <Preference
+                app:key="feedback"
+                app:title="Provide feedback"
+                app:summary="Or submit a bug report"/>
+
+        <Preference
+            app:key="about"
+            app:title="README"
+            app:summary="Open GitHub page" />
+
+    </PreferenceCategory>
+
+</androidx.preference.PreferenceScreen>

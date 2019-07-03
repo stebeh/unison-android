@@ -1,0 +1,71 @@
+<!--
+  ~ Copyright 2018 The app Open Source Project
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<androidx.preference.PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="Configuration">
+
+        <EditTextPreference
+            app:key="config_file"
+            app:title="Preferences file"
+            app:useSimpleSummaryProvider="true" />
+
+        <EditTextPreference
+            app:key="key_file"
+            app:title="ssh key file"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Main">
+
+        <Preference
+            app:key="run_once"
+            app:title="Start Unison"
+            app:summary="Synchronize (non-interactively) and show output" />
+
+        <Preference
+            app:key="run_background"
+            app:title="Start Unison in background"
+            app:summary="Synchronize and continue to monitor file system" />
+
+        <CheckBoxPreference
+            app:key="start_boot"
+            app:defaultValue="false"
+            app:title="Auto-start on boot"
+            app:summary="Start Unison in background on boot" />
+
+        <PreferenceCategory app:title="Help">
+
+            <Preference
+                app:key="log"
+                app:title="View log file" />
+
+            <Preference
+                app:key="feedback"
+                app:title="Provide feedback"
+                app:summary="Or submit a bug report"/>
+
+            <Preference
+                app:key="about"
+                app:title="README"
+                app:summary="Open GitHub page" />
+
+        </PreferenceCategory>
+
+    </PreferenceCategory>
+
+</androidx.preference.PreferenceScreen>

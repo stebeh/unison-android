@@ -1,0 +1,5 @@
+root = /mnt/sdcard/my_dir
+root = ssh://me@100.23.150.18//home/my_dir
+
+sshargs = -C
+log = true

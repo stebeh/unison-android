@@ -1,0 +1,11 @@
+<resources>
+
+    <string-array name="delay_vals">
+        <item>10</item>
+        <item>30</item>
+        <item>60</item>
+        <item>600</item>
+        <item>1800</item>
+    </string-array>
+
+</resources>
