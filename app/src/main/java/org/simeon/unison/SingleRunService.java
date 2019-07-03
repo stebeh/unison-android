@@ -68,6 +68,10 @@ public class SingleRunService extends IntentService implements OutputService {
             while ((line = errRead.readLine()) != null) {
                 errBuf.append(line + '\n');
                 binder.broadcastOutput(errBuf.toString());
+                if (line.contains("Failed loading keyfile")) {
+                    proc.destroy();
+                    stopForeground(true);
+                }
             }
             errRead.close();
 

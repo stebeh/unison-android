@@ -7,7 +7,6 @@ import android.app.Notification;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
 import android.os.IBinder;
 import android.util.Log;
@@ -53,7 +52,8 @@ public class UnisonService extends IntentService implements OutputService {
     private static final int STATUS_WORKING = 2;
     private static final int STATUS_SYNCHRONIZED = 3;
     private static final int STATUS_ERROR = 4;
-    private static final int STATUS_LOST_CONNECTION = 5;
+    private static final int STATUS_KEY_ERROR = 5;
+    private static final int STATUS_LOST_CONNECTION = 6;
 
     HashMap<String, Integer> statusMsg = new HashMap<String, Integer>() {{
         put("Connected", STATUS_STARTED);
@@ -63,6 +63,7 @@ public class UnisonService extends IntentService implements OutputService {
         put("Synchronization complete", STATUS_SYNCHRONIZED);
         put("[END]", STATUS_SYNCHRONIZED);
         put("Fatal error:", STATUS_ERROR);
+        put("Failed loading keyfile", STATUS_KEY_ERROR);
         put("Lost connection with the server", STATUS_LOST_CONNECTION);
     }};
 
@@ -253,6 +254,10 @@ public class UnisonService extends IntentService implements OutputService {
                         notifyBuilder.setSmallIcon(R.drawable.error)
                                 .setContentText(getStatusMsg("Fatal error. See status..."));
                         break;
+                    case STATUS_KEY_ERROR:
+                        notifyBuilder.setSmallIcon(R.drawable.error)
+                                .setContentText(getStatusMsg("Fatal error: Invalid key file."));
+                        stopForeground(false);
                     case STATUS_LOST_CONNECTION:
                         notifyBuilder.setSmallIcon(R.drawable.error)
                                 .setContentText(getStatusMsg("Fatal error. See status..."));

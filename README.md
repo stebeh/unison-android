@@ -18,6 +18,8 @@ If your profile has a remote root, you will need to also select an (OpenSSH) key
 ## (Known) limitations and bugs
 
 * Only non-interactive (`-batch`) mode is supported.
+* Limited handling of various errors and edge cases (see [todo](todo.md)).
+* Not yet thoroughly tested.
 
 
 ## Acknowledgements
