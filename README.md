@@ -24,7 +24,7 @@ If your profile has a remote root, you will need to also select an (OpenSSH) key
 
 ## Acknowledgements
 
-[Unison](https://github.com/bcpierce00/unison) is written by Benjamin C. Piece.
+[Unison](https://github.com/bcpierce00/unison) is written by Benjamin C. Pierce.
 
 Android binaries of the program taken from [https://github.com/vovcacik/unison-build-scripts](https://github.com/vovcacik/unison-build-scripts).
 

@@ -88,5 +88,9 @@ public class ServiceOutputActivity extends AppCompatActivity {
             });
         }
 
+        @Override
+        public void onOutputFinish() {
+            outputService.quit();
+        }
     };
 }

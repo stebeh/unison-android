@@ -1,7 +1,4 @@
-* better error handling in general
-	* case when ssh key is invalid is troublesome
-	* SingleRunService does not communicate well with ServiceOutputActivity, especially on error
-		* in general, behaviour on error needs to be better defined
-	* misc. foolproofing: e.g., no pausing/resuming after an error
+* service/activity communication needs to be much safer and more carefully implemented (especially between `SingleRunService` and `ServiceOutputAcitivity`); not sure if `IntentService` is suitable for this situation
+* see if `ControlActivity` can work properly without `android:excludeFromRecents="true"`
 * thorough testing
-* code refactoring
+* major code refactoring

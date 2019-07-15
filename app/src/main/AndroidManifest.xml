@@ -27,7 +27,8 @@
 
         <activity
             android:name=".ControlActivity"
-            android:label="Unison (running)" />
+            android:label="Unison (running)"
+            android:excludeFromRecents="true" />
 
         <activity android:name=".ServiceOutputActivity" />
 

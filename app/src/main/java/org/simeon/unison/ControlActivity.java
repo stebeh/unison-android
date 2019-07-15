@@ -55,7 +55,7 @@ public class ControlActivity extends AppCompatActivity {
             unisonService = (UnisonService)binder.getService();
             binder.addListener(serviceListener);
 
-            settingsFragment.updatePausePreference();
+            settingsFragment.updatePreferences();
         }
 
         @Override
@@ -71,10 +71,33 @@ public class ControlActivity extends AppCompatActivity {
             setPreferencesFromResource(R.xml.control, rootKey);
         }
 
-        void updatePausePreference() {
-            boolean is_paused = getUnisonService().isPaused();
-            this.getActivity().setTitle("Unison (" + (is_paused ? "paused)" : "running)"));
-            getPreferenceManager().findPreference("pause").setTitle(is_paused ? "Resume" : "Pause");
+        void updatePreferences() {
+            int procStatus = getUnisonService().getProcStatus();
+
+            Preference pausePreference = getPreferenceManager().findPreference("pause");
+
+            switch (procStatus) {
+                case UnisonService.PROC_INACTIVE:
+                    getActivity().setTitle("Unison (stopped)");
+                    pausePreference.setTitle("Pause");
+                    pausePreference.setEnabled(false);
+                    break;
+                case UnisonService.PROC_RUNNING:
+                    getActivity().setTitle("Unison (running)");
+                    pausePreference.setTitle("Pause");
+                    pausePreference.setEnabled(true);
+                    break;
+                case UnisonService.PROC_PAUSED:
+                    getActivity().setTitle("Unison (paused)");
+                    pausePreference.setTitle("Resume");
+                    pausePreference.setEnabled(true);
+                    break;
+                case UnisonService.PROC_FINISHED:
+                    getActivity().setTitle("Unison (error)");
+                    pausePreference.setTitle("Pause");
+                    pausePreference.setEnabled(false);
+
+            }
         }
 
         @Override
@@ -89,13 +112,13 @@ public class ControlActivity extends AppCompatActivity {
                             .putExtra("file", getActivity().getFilesDir() + "/unison.log"));
                     break;
                 case "pause":
-                    if (!getUnisonService().isPaused()) {
+                    if (getUnisonService().getProcStatus() == UnisonService.PROC_RUNNING) {
                         if (getUnisonService().pause()) {
                             this.getActivity().setTitle("Unison (paused)");
                             preference.setTitle("Resume");
                         }
                     }
-                    else {
+                    else if (getUnisonService().getProcStatus() == UnisonService.PROC_PAUSED) {
                         if (getUnisonService().resume()) {
                             this.getActivity().setTitle("Unison (running)");
                             preference.setTitle("Pause");
@@ -104,12 +127,12 @@ public class ControlActivity extends AppCompatActivity {
                     break;
                 case "restart":
                     getUnisonService().quit();
-                    getUnisonService().stopSelf();
+                    getUnisonService().stopForeground(true);
                     this.getActivity().startService(new Intent(this.getActivity(), UnisonService.class));
                     break;
                 case "quit":
                     getUnisonService().quit();
-                    getUnisonService().stopSelf();
+                    getUnisonService().stopForeground(true);
                     this.getActivity().finish();
                     break;
                 case "recent":
@@ -140,6 +163,11 @@ public class ControlActivity extends AppCompatActivity {
     private OutputServiceListener serviceListener = new OutputServiceListener() {
         @Override
         public void onOutputUpdate(String line) {
+
+        }
+
+        @Override
+        public void onOutputFinish() {
 
         }
     };

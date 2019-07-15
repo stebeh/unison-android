@@ -25,4 +25,10 @@ public class OutputServiceBinder extends Binder {
             listener.onOutputUpdate(out);
         }
     }
+
+    public void broadcastFinish() {
+        for (OutputServiceListener listener : listeners) {
+            listener.onOutputFinish();
+        }
+    }
 }

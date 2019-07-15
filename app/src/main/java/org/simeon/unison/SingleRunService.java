@@ -4,15 +4,20 @@ import android.app.IntentService;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
 public class SingleRunService extends IntentService implements OutputService {
+
+    private java.lang.Process proc;
 
     private static final int NOTIFY_ID = 1;
 
@@ -30,6 +35,11 @@ public class SingleRunService extends IntentService implements OutputService {
 
     public String getOutput() {
         return errBuf.toString();
+    }
+
+    public void quit() {
+        proc.destroy();
+        stopForeground(true);
     }
 
     @Override
@@ -51,38 +61,41 @@ public class SingleRunService extends IntentService implements OutputService {
 
         startProcess();
 
+        // temporary fix for service exiting too early
+        // (there should definitely be better communication between service and activity)
+        try {
+            Thread.sleep(500);
+        }
+        catch (Exception e) {
+            return;
+        }
+
         stopForeground(true);
     }
 
     private void startProcess() {
         errBuf = new StringBuffer();
         try {
-            Process proc = Runtime.getRuntime().exec(
+            proc = Runtime.getRuntime().exec(
                     new String[]{"./unison", "-batch", "-sshargs", "-y -i .ssh/dbr_key",
                                  "-perms", "0", "-dontchmod"},
                     new String[]{"HOME=" + getFilesDir(), "PATH=" + getFilesDir(), "LD_LIBRARY_PATH=" + getFilesDir() + "/lib"},
                     getFilesDir());
-
             BufferedReader errRead = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
             String line;
             while ((line = errRead.readLine()) != null) {
                 errBuf.append(line + '\n');
                 binder.broadcastOutput(errBuf.toString());
                 if (line.contains("Failed loading keyfile")) {
-                    proc.destroy();
-                    stopForeground(true);
+                    break;
                 }
             }
             errRead.close();
 
-            proc.waitFor();
+            binder.broadcastFinish();
         }
         catch (IOException e) {
             Log.e("Unison", e.getMessage());
-        }
-        catch (InterruptedException e) {
-            Log.e("Unison", e.getMessage());
-
         }
     }
 }

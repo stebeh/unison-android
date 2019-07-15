@@ -32,9 +32,13 @@ import java.util.regex.Pattern;
 
 public class UnisonService extends IntentService implements OutputService {
 
+    public static final int PROC_INACTIVE = 0;
+    public static final int PROC_RUNNING = 1;
+    public static final int PROC_PAUSED = 2;
+    public static final int PROC_FINISHED = 3;
+
     private java.lang.Process proc;
-    private boolean isRunning;
-    private boolean isPaused;
+    private int procStatus = PROC_INACTIVE;
 
     private static final int RECONNECT_DELAY = 10000;
 
@@ -45,7 +49,7 @@ public class UnisonService extends IntentService implements OutputService {
 
     NotificationManager notifyManager;
     Notification.Builder notifyBuilder;
-    private static final int NOTIFY_ID = 3;
+    private static final int NOTIFY_ID = 1;
 
     private static final int STATUS_STARTED = 0;
     private static final int STATUS_LOOKING = 1;
@@ -99,21 +103,25 @@ public class UnisonService extends IntentService implements OutputService {
         }
     }
 
-    public boolean isRunning() {
-        return isRunning;
+    public int getProcStatus() {
+        return procStatus;
     }
 
-    public boolean isPaused() { return isPaused; }
+
+    public void quit() {
+        proc.destroy();
+        procStatus = PROC_INACTIVE;
+    }
 
     public boolean pause() {
-        if (!isRunning) return false;
+        if (procStatus != PROC_RUNNING) return false;
         try {
             int pid = getProcessPid(proc);
             if (pid != 0) {
                 Runtime.getRuntime().exec(new String[]{"kill", "-STOP", Integer.toString(pid)});
                 notifyBuilder.setSmallIcon(R.drawable.wait);
                 notifyManager.notify(NOTIFY_ID, notifyBuilder.build());
-                isPaused = true;
+                procStatus = PROC_PAUSED;
                 return true;
             }
         }
@@ -123,25 +131,20 @@ public class UnisonService extends IntentService implements OutputService {
     }
 
     public boolean resume() {
-        if (!isRunning) return false;
+        if (procStatus != PROC_PAUSED) return false;
         try {
             int pid = getProcessPid(proc);
             if (pid != 0) {
                 Runtime.getRuntime().exec(new String[]{"kill", "-CONT", Integer.toString(pid)});
                 notifyBuilder.setSmallIcon(R.drawable.good);
                 notifyManager.notify(NOTIFY_ID, notifyBuilder.build());
-                isPaused = false;
+                procStatus = PROC_RUNNING;
                 return true;
             }
         }
         catch (IOException e) {
         }
         return false;
-    }
-
-    public void quit() {
-        proc.destroy();
-        isRunning = false;
     }
 
     public String getOutput() {
@@ -188,8 +191,7 @@ public class UnisonService extends IntentService implements OutputService {
                             "-repeat", "watch",},
                     new String[]{"HOME=" + getFilesDir(), "PATH=" + getFilesDir(), "LD_LIBRARY_PATH=" + getFilesDir() + "/lib"},
                     getFilesDir());
-            isRunning = true;
-            isPaused = false;
+            procStatus = PROC_RUNNING;
 
             BufferedReader errRead = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
             String line;
@@ -201,7 +203,7 @@ public class UnisonService extends IntentService implements OutputService {
             errRead.close();
 
             // keep service alive (on error)
-            while (isRunning) {
+            while (procStatus == PROC_FINISHED) {
                 try {
                     Thread.sleep(1000);
                 }
@@ -251,14 +253,18 @@ public class UnisonService extends IntentService implements OutputService {
                         }
                         break;
                     case STATUS_ERROR:
+                        procStatus = PROC_FINISHED;
                         notifyBuilder.setSmallIcon(R.drawable.error)
                                 .setContentText(getStatusMsg("Fatal error. See status..."));
                         break;
                     case STATUS_KEY_ERROR:
+                        procStatus = PROC_FINISHED;
                         notifyBuilder.setSmallIcon(R.drawable.error)
                                 .setContentText(getStatusMsg("Fatal error: Invalid key file."));
                         stopForeground(false);
+                        break;
                     case STATUS_LOST_CONNECTION:
+                        procStatus = PROC_FINISHED;
                         notifyBuilder.setSmallIcon(R.drawable.error)
                                 .setContentText(getStatusMsg("Fatal error. See status..."));
 
@@ -295,10 +301,10 @@ public class UnisonService extends IntentService implements OutputService {
             if (PreferenceManager.getDefaultSharedPreferences(
                     getApplicationContext()).getBoolean("auto_pause", false)) {
                 int wifiState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, WifiManager.WIFI_STATE_DISABLED);
-                if (wifiState == WifiManager.WIFI_STATE_DISABLING && !isPaused()) {
+                if (wifiState == WifiManager.WIFI_STATE_DISABLING && procStatus == PROC_RUNNING) {
                     pause();
                 }
-                else if (wifiState == WifiManager.WIFI_STATE_ENABLED && isPaused()) {
+                else if (wifiState == WifiManager.WIFI_STATE_ENABLED && procStatus == PROC_PAUSED) {
                     resume();
                 }
             }
