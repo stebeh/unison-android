@@ -1,5 +1,10 @@
-root = /mnt/sdcard/my_dir
-root = ssh://me@100.23.150.18//home/my_dir
+root = /mnt/sdcard/DCIM/Camera
+root = ssh://me@100.23.150.18//home/me/Photos
 
 sshargs = -C
 log = true
+
+# upload all Android photos to the /home/Photos directory on the ssh machine
+# (without these two options the directories would be synced one-to-one)
+force = /mnt/sdcard/DCIM/Camera
+nodeletion = ssh://me@100.23.150.18//home/me/Photos
