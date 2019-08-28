@@ -30,7 +30,8 @@
             android:label="Unison (running)"
             android:excludeFromRecents="true" />
 
-        <activity android:name=".ServiceOutputActivity" />
+        <activity android:name=".ServiceOutputActivity"
+            android:configChanges="orientation|screenSize"/>
 
         <activity android:name=".FileViewActivity" />
 
