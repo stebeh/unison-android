@@ -18,6 +18,7 @@ If your profile has a remote root, you will need to also select an (OpenSSH) key
 ## (Known) limitations and bugs
 
 * Only non-interactive (`-batch`) mode is supported.
+* Symlinks on remote host will cause (non-fatal) errors due to the fact that Android's external storage does not support them. It is recommended to manually add such paths to ignore list in profile.
 * Timestamps in status and logs do not respect Android's timezone. (Will probably need to be fixed by modifying binary as opposed to app.)
 * See [todo](todo.md).
 
