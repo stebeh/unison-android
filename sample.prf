@@ -1,10 +1,11 @@
 root = /mnt/sdcard/DCIM/Camera
-root = ssh://me@100.23.150.18//home/me/Photos
+root = ssh://me@remotehost.org//home/me/Photos
 
 sshargs = -C
 log = true
 
-# upload all Android photos to the /home/Photos directory on the ssh machine
-# (without these two options the directories would be synced one-to-one)
+# upload all Android photos to the /home/me/Photos directory on the remote machine
+# (similar to the "Camera upload" feature of Dropbox)
+# omit these two options for a standard two-way sync
 force = /mnt/sdcard/DCIM/Camera
-nodeletion = ssh://me@100.23.150.18//home/me/Photos
+nodeletion = ssh://me@remotehost.org//home/me/Photos
