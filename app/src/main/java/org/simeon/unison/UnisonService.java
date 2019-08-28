@@ -40,8 +40,6 @@ public class UnisonService extends Service {
     private java.lang.Process proc;
     private int procStatus = PROC_INACTIVE;
 
-    private static final int RECONNECT_DELAY = 10000;
-
     String rootDir;
     private LinkedList<String> recentChanges = new LinkedList<>();
     Pattern rootPattern = Pattern.compile("Connected \\[\\/\\/.*\\/\\/(.*) ->.*");
@@ -57,9 +55,10 @@ public class UnisonService extends Service {
     private static final int STATUS_LOOKING = 1;
     private static final int STATUS_WORKING = 2;
     private static final int STATUS_SYNCHRONIZED = 3;
-    private static final int STATUS_ERROR = 4;
-    private static final int STATUS_KEY_ERROR = 5;
-    private static final int STATUS_LOST_CONNECTION = 6;
+    private static final int STATUS_INCOMPLETE = 4;
+    private static final int STATUS_ERROR = 5;
+    private static final int STATUS_KEY_ERROR = 6;
+    private static final int STATUS_LOST_CONNECTION = 7;
 
     HashMap<String, Integer> statusMsg = new HashMap<String, Integer>() {{
         put("Connected", STATUS_STARTED);
@@ -68,6 +67,7 @@ public class UnisonService extends Service {
         put("Nothing to do", STATUS_SYNCHRONIZED);
         put("Synchronization complete", STATUS_SYNCHRONIZED);
         put("[END]", STATUS_SYNCHRONIZED);
+        put("Synchronization incomplete", STATUS_INCOMPLETE);
         put("Fatal error:", STATUS_ERROR);
         put("Failed loading keyfile", STATUS_KEY_ERROR);
         put("Lost connection with the server", STATUS_LOST_CONNECTION);
@@ -241,6 +241,10 @@ public class UnisonService extends Service {
                                     .replace("Copying", "Copied");
                             recentChanges.push(getStatusMsg(fileAction + " " + filePath));
                         }
+                        break;
+                    case STATUS_INCOMPLETE:
+                        notifyBuilder.setSmallIcon(R.drawable.warning)
+                                .setContentText(getStatusMsg("Synchronization incomplete. See status..."));
                         break;
                     case STATUS_ERROR:
                         procStatus = PROC_FINISHED;
