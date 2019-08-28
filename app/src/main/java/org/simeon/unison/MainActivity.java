@@ -61,11 +61,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        /*
         if (isServiceRunning(false)) {
             startActivity(new Intent(this, ServiceOutputActivity.class));
             this.finish();
             return;
-        }
+        }*/
         if (isServiceRunning(true)) {
             startActivity(new Intent(this, ControlActivity.class));
             this.finish();
@@ -120,7 +121,6 @@ public class MainActivity extends AppCompatActivity {
                 case "run_once":
                     startActivity(new Intent(getActivity(), ServiceOutputActivity.class).
                             putExtra("background", false));
-                    getActivity().startService(new Intent(getActivity(), SingleRunService.class));
                     getActivity().finish();
                     break;
                 case "run_background":

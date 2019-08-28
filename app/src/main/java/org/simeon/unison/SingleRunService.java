@@ -1,6 +1,5 @@
 package org.simeon.unison;
 
-import android.app.IntentService;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -9,41 +8,26 @@ import android.content.Intent;
 import android.os.IBinder;
 import android.util.Log;
 
-import androidx.annotation.Nullable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-public class SingleRunService extends IntentService implements OutputService {
+public class SingleRunService extends Service {
 
     private java.lang.Process proc;
 
     private static final int NOTIFY_ID = 1;
 
-    public SingleRunService() {
-        super("SingleRunService");
-    }
-
     private final OutputServiceBinder binder = new OutputServiceBinder(this);
-    private StringBuffer errBuf = new StringBuffer();
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        return super.onStartCommand(intent, flags, startId);
+    }
 
     @Override
     public IBinder onBind(Intent intent) {
-        return binder;
-    }
-
-    public String getOutput() {
-        return errBuf.toString();
-    }
-
-    public void quit() {
-        proc.destroy();
-        stopForeground(true);
-    }
-
-    @Override
-    protected void onHandleIntent(Intent intent) {
         Intent notifyIntent = new Intent(this, ServiceOutputActivity.class);
         notifyIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -59,22 +43,18 @@ public class SingleRunService extends IntentService implements OutputService {
 
         startForeground(NOTIFY_ID, notifyBuilder.build());
 
-        startProcess();
+        new Thread() {
+            public void run() {
+                startProcess();
+                stopForeground(true);
+                stopSelf();
+            }
+        }.start();
 
-        // temporary fix for service exiting too early
-        // (there should definitely be better communication between service and activity)
-        try {
-            Thread.sleep(500);
-        }
-        catch (Exception e) {
-            return;
-        }
-
-        stopForeground(true);
+        return binder;
     }
 
     private void startProcess() {
-        errBuf = new StringBuffer();
         try {
             proc = Runtime.getRuntime().exec(
                     new String[]{"./unison", "-batch", "-sshargs", "-y -i .ssh/dbr_key",
@@ -84,15 +64,12 @@ public class SingleRunService extends IntentService implements OutputService {
             BufferedReader errRead = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
             String line;
             while ((line = errRead.readLine()) != null) {
-                errBuf.append(line + '\n');
-                binder.broadcastOutput(errBuf.toString());
+                binder.broadcastUpdate(line + '\n');
                 if (line.contains("Failed loading keyfile")) {
                     break;
                 }
             }
             errRead.close();
-
-            binder.broadcastFinish();
         }
         catch (IOException e) {
             Log.e("Unison", e.getMessage());

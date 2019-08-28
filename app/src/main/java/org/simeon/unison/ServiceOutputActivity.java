@@ -1,5 +1,6 @@
 package org.simeon.unison;
 
+import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -19,7 +20,6 @@ public class ServiceOutputActivity extends AppCompatActivity {
     TextView textView;
 
     boolean backgroundService;
-    OutputService outputService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,37 +37,37 @@ public class ServiceOutputActivity extends AppCompatActivity {
         });
 
         textView = findViewById(R.id.output_text);
-    }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        // TODO: this is not an elegant way of generalizing this class
         Intent intent = new Intent(this, backgroundService ? UnisonService.class : SingleRunService.class);
         bindService(intent, connection, Context.BIND_AUTO_CREATE);
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
-
-        unbindService(connection);
+    protected void onStart() {
+        super.onStart();
     }
 
-    private ServiceConnection connection = new ServiceConnection() {
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
 
-        OutputServiceBinder binder;
+        ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo info : am.getRunningServices(Integer.MAX_VALUE)) {
+            if (info.service.getClassName().equals(SingleRunService.class.getName()))
+                unbindService(connection);
+        }
+    }
+
+    OutputServiceBinder binder;
+
+    private ServiceConnection connection = new ServiceConnection() {
 
         @Override
         public void onServiceConnected(ComponentName className, IBinder service) {
             binder = (OutputServiceBinder) service;
-            outputService = binder.getService();
             binder.addListener(serviceListener);
 
-            String output = outputService.getOutput();
-            if (!output.isEmpty())
-                textView.setText(outputService.getOutput());
+            textView.setText(binder.getBuffer().toString());
         }
 
         @Override
@@ -79,18 +79,17 @@ public class ServiceOutputActivity extends AppCompatActivity {
     private OutputServiceListener serviceListener = new OutputServiceListener() {
 
         @Override
-        public void onOutputUpdate(final String errText) {
+        public void onOutputUpdate() {
             runOnUiThread(new Runnable() {
                 @Override
-                public void run() {
-                    textView.setText(errText);
+                public void run() { textView.setText(binder.getBuffer().toString());
                 }
             });
         }
 
         @Override
-        public void onOutputFinish() {
-            outputService.quit();
+        public void onStatusChange() {
+
         }
     };
 }

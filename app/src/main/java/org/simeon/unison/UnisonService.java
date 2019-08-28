@@ -1,9 +1,9 @@
 package org.simeon.unison;
 
-import android.app.IntentService;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Notification;
+import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -30,7 +30,7 @@ import java.util.TimerTask;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class UnisonService extends IntentService implements OutputService {
+public class UnisonService extends Service {
 
     public static final int PROC_INACTIVE = 0;
     public static final int PROC_RUNNING = 1;
@@ -50,6 +50,8 @@ public class UnisonService extends IntentService implements OutputService {
     NotificationManager notifyManager;
     Notification.Builder notifyBuilder;
     private static final int NOTIFY_ID = 1;
+
+    Timer reconnectTimer = new Timer();
 
     private static final int STATUS_STARTED = 0;
     private static final int STATUS_LOOKING = 1;
@@ -71,12 +73,7 @@ public class UnisonService extends IntentService implements OutputService {
         put("Lost connection with the server", STATUS_LOST_CONNECTION);
     }};
 
-    public UnisonService() {
-        super("UnisonService");
-    }
-
     private final OutputServiceBinder binder = new OutputServiceBinder(this);
-    private StringBuffer errBuf = new StringBuffer();
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -110,11 +107,12 @@ public class UnisonService extends IntentService implements OutputService {
 
     public void quit() {
         proc.destroy();
+        reconnectTimer.cancel();
         procStatus = PROC_INACTIVE;
     }
 
-    public boolean pause() {
-        if (procStatus != PROC_RUNNING) return false;
+    public void pause() {
+        if (procStatus != PROC_RUNNING) return;
         try {
             int pid = getProcessPid(proc);
             if (pid != 0) {
@@ -122,16 +120,16 @@ public class UnisonService extends IntentService implements OutputService {
                 notifyBuilder.setSmallIcon(R.drawable.wait);
                 notifyManager.notify(NOTIFY_ID, notifyBuilder.build());
                 procStatus = PROC_PAUSED;
-                return true;
+                binder.broadcastStatus();
             }
         }
         catch (IOException e) {
         }
-        return false;
+        binder.broadcastStatus();
     }
 
-    public boolean resume() {
-        if (procStatus != PROC_PAUSED) return false;
+    public void resume() {
+        if (procStatus != PROC_PAUSED) return;
         try {
             int pid = getProcessPid(proc);
             if (pid != 0) {
@@ -139,16 +137,11 @@ public class UnisonService extends IntentService implements OutputService {
                 notifyBuilder.setSmallIcon(R.drawable.good);
                 notifyManager.notify(NOTIFY_ID, notifyBuilder.build());
                 procStatus = PROC_RUNNING;
-                return true;
             }
         }
         catch (IOException e) {
         }
-        return false;
-    }
-
-    public String getOutput() {
-        return errBuf.toString();
+        binder.broadcastStatus();
     }
 
     public ArrayList<String> getRecentChanges() {
@@ -160,7 +153,8 @@ public class UnisonService extends IntentService implements OutputService {
     }
 
     @Override
-    protected void onHandleIntent(Intent intent) {
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        super.onStartCommand(intent, flags, startId);
         //registerReceiver(new WifiStateReceiver(), new IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION));
 
         Intent notifyIntent = new Intent(this, ControlActivity.class);
@@ -178,39 +172,35 @@ public class UnisonService extends IntentService implements OutputService {
 
         startForeground(NOTIFY_ID, notifyBuilder.build());
 
-        startProcess();
+        new Thread() {
+            @Override
+            public void run() {
+                startProcess();
+            }
+        }.start();
 
-        stopForeground(true);
+        return Service.START_STICKY;
     }
 
     private void startProcess() {
         try {
+            procStatus = PROC_RUNNING;
+            binder.broadcastStatus();
+
             proc = Runtime.getRuntime().exec(
                     new String[]{"./unison", "-batch", "-sshargs", "-y -i .ssh/dbr_key",
                             "-perms", "0", "-dontchmod",
                             "-repeat", "watch",},
                     new String[]{"HOME=" + getFilesDir(), "PATH=" + getFilesDir(), "LD_LIBRARY_PATH=" + getFilesDir() + "/lib"},
                     getFilesDir());
-            procStatus = PROC_RUNNING;
 
             BufferedReader errRead = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
             String line;
             while ((line = errRead.readLine()) != null) {
                 processEvent(line);
-                errBuf.append(line + '\n');
-                binder.broadcastOutput(errBuf.toString());
+                binder.broadcastUpdate(line + '\n');
             }
             errRead.close();
-
-            // keep service alive (on error)
-            while (procStatus == PROC_FINISHED) {
-                try {
-                    Thread.sleep(1000);
-                }
-                catch (Exception e) {
-                    return;
-                }
-            }
         }
         catch (IOException e) {
             Log.e("Unison", e.getMessage());
@@ -274,7 +264,8 @@ public class UnisonService extends IntentService implements OutputService {
                                 getApplicationContext()).getString("restart_delay", "30"));
                         reconnectDelay = reconnectDelay > 10 ? reconnectDelay : 10;
                         if (autoRestart) {
-                            new Timer().schedule(new TimerTask() {
+                            reconnectTimer = new Timer();
+                            reconnectTimer.schedule(new TimerTask() {
                                 @Override
                                 public void run() {
                                     proc.destroy();
@@ -284,6 +275,8 @@ public class UnisonService extends IntentService implements OutputService {
                         }
                         break;
                 }
+
+                binder.broadcastStatus();
 
                 notifyManager.notify(NOTIFY_ID, notifyBuilder.build());
             }
@@ -295,6 +288,7 @@ public class UnisonService extends IntentService implements OutputService {
         return dateFormat.format(Calendar.getInstance().getTime()) + inner;
     }
 
+    /*
     public class WifiStateReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -309,5 +303,5 @@ public class UnisonService extends IntentService implements OutputService {
                 }
             }
         }
-    }
+    }*/
 }

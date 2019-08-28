@@ -14,6 +14,8 @@ import androidx.preference.PreferenceFragmentCompat;
 
 public class ControlActivity extends AppCompatActivity {
 
+    boolean running;
+
     SettingsFragment settingsFragment;
 
     UnisonService unisonService;
@@ -39,8 +41,22 @@ public class ControlActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+
+        running = true;
+    }
+
+    @Override
     protected void onStop() {
         super.onStop();
+
+        running = false;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
 
         unbindService(connection);
     }
@@ -113,26 +129,22 @@ public class ControlActivity extends AppCompatActivity {
                     break;
                 case "pause":
                     if (getUnisonService().getProcStatus() == UnisonService.PROC_RUNNING) {
-                        if (getUnisonService().pause()) {
-                            this.getActivity().setTitle("Unison (paused)");
-                            preference.setTitle("Resume");
-                        }
+                        getUnisonService().pause();
                     }
                     else if (getUnisonService().getProcStatus() == UnisonService.PROC_PAUSED) {
-                        if (getUnisonService().resume()) {
-                            this.getActivity().setTitle("Unison (running)");
-                            preference.setTitle("Pause");
-                        }
+                        getUnisonService().resume();
                     }
                     break;
                 case "restart":
                     getUnisonService().quit();
                     getUnisonService().stopForeground(true);
+                    getUnisonService().stopSelf();
                     this.getActivity().startService(new Intent(this.getActivity(), UnisonService.class));
                     break;
                 case "quit":
                     getUnisonService().quit();
                     getUnisonService().stopForeground(true);
+                    getUnisonService().stopSelf();
                     this.getActivity().finish();
                     break;
                 case "recent":
@@ -162,13 +174,19 @@ public class ControlActivity extends AppCompatActivity {
 
     private OutputServiceListener serviceListener = new OutputServiceListener() {
         @Override
-        public void onOutputUpdate(String line) {
+        public void onOutputUpdate() {
 
         }
 
-        @Override
-        public void onOutputFinish() {
-
+        public void onStatusChange() {
+            if (running) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        settingsFragment.updatePreferences();
+                    }
+                });
+            }
         }
     };
 }
