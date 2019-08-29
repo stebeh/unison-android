@@ -55,16 +55,7 @@
             app:key="auto_restart"
             app:defaultValue="true"
             app:title="Automatically reconnect"
-            app:summary="Restart when connection is lost" />
-
-        <ListPreference
-            app:key="restart_delay"
-            app:entries="@array/delay_vals"
-            app:entryValues="@array/delay_vals"
-            app:defaultValue="30"
-            app:title="Reconnect delay (s)"
-            app:useSimpleSummaryProvider="true"
-            app:dependency="auto_restart" />
+            app:summary="Try to reconnect on lost connection, pending network availability" />
 
         <!--
         <CheckBoxPreference

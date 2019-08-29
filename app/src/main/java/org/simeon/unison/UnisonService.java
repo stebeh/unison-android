@@ -7,6 +7,9 @@ import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
 import android.os.IBinder;
 import android.util.Log;
@@ -47,6 +50,13 @@ public class UnisonService extends Service {
     NotificationManager notifyManager;
     Notification.Builder notifyBuilder;
     private static final int NOTIFY_ID = 1;
+
+    boolean autoRestart;
+
+    boolean disconnected = false;
+
+    private static final int INIT_RECONNECT_DELAY = 1000;
+    private static final int SUBSQ_RECONNECT_DELAY = 10000;
 
     Timer reconnectTimer = new Timer();
 
@@ -133,7 +143,10 @@ public class UnisonService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
-        //registerReceiver(new WifiStateReceiver(), new IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION));
+
+        autoRestart = PreferenceManager.getDefaultSharedPreferences(
+                getApplicationContext()).getBoolean("auto_restart", false);
+        registerReceiver(new NetworkReceiver(), new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
 
         Intent notifyIntent = new Intent(this, ControlActivity.class);
         notifyIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
@@ -239,21 +252,15 @@ public class UnisonService extends Service {
                         procStatus = PROC_FINISHED;
                         notifyBuilder.setSmallIcon(R.drawable.error)
                                 .setContentText(getStatusMsg("Fatal error. See status..."));
-
-                        boolean autoRestart = PreferenceManager.getDefaultSharedPreferences(
-                                getApplicationContext()).getBoolean("auto_restart", false);
-                        int reconnectDelay = Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(
-                                getApplicationContext()).getString("restart_delay", "30"));
-                        reconnectDelay = reconnectDelay > 10 ? reconnectDelay : 10;
+                        disconnected = true;
                         if (autoRestart) {
                             reconnectTimer = new Timer();
                             reconnectTimer.schedule(new TimerTask() {
                                 @Override
                                 public void run() {
-                                    proc.destroy();
-                                    startProcess();
+                                    reconnect();
                                 }
-                            }, reconnectDelay * 1000);
+                            }, INIT_RECONNECT_DELAY, SUBSQ_RECONNECT_DELAY);
                         }
                         break;
                 }
@@ -270,20 +277,30 @@ public class UnisonService extends Service {
         return dateFormat.format(Calendar.getInstance().getTime()) + inner;
     }
 
-    /*
-    public class WifiStateReceiver extends BroadcastReceiver {
+    public void reconnect() {
+        if (Util.networkConnected(getApplicationContext())) {
+            reconnectTimer.cancel();
+            disconnected = false;
+            proc.destroy();
+            notifyBuilder.setSmallIcon(R.drawable.wait).setContentText("Starting...");
+            notifyManager.notify(NOTIFY_ID, notifyBuilder.build());
+            startProcess();
+        }
+    }
+
+    public class NetworkReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (PreferenceManager.getDefaultSharedPreferences(
-                    getApplicationContext()).getBoolean("auto_pause", false)) {
-                int wifiState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, WifiManager.WIFI_STATE_DISABLED);
-                if (wifiState == WifiManager.WIFI_STATE_DISABLING && procStatus == PROC_RUNNING) {
-                    pause();
-                }
-                else if (wifiState == WifiManager.WIFI_STATE_ENABLED && procStatus == PROC_PAUSED) {
-                    resume();
-                }
+            if (autoRestart && disconnected && Util.networkConnected(getApplicationContext())) {
+                reconnectTimer.cancel();
+                reconnectTimer = new Timer();
+                reconnectTimer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        reconnect();
+                    }
+                }, 0, SUBSQ_RECONNECT_DELAY);
             }
         }
-    }*/
+    }
 }
