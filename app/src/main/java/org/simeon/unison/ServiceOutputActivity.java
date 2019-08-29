@@ -1,6 +1,5 @@
 package org.simeon.unison;
 
-import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -51,10 +50,9 @@ public class ServiceOutputActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
 
-        ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo info : am.getRunningServices(Integer.MAX_VALUE)) {
-            if (info.service.getClassName().equals(SingleRunService.class.getName()))
-                unbindService(connection);
+        if (Util.isServiceRunning(this,
+                backgroundService ? UnisonService.class : SingleRunService.class)) {
+            unbindService(connection);
         }
     }
 

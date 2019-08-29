@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.Runtime;
 import java.lang.Thread;
-import java.lang.reflect.Field;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -80,30 +79,9 @@ public class UnisonService extends Service {
         return binder;
     }
 
-    private int getProcessPid(Process proc) {
-        // A ridiculously hacky way to get the PID of process
-        Field field;
-        try {
-            field = proc.getClass().getDeclaredField("pid");
-        }
-        catch (NoSuchFieldException e) {
-            return 0;
-        }
-        try {
-            field.setAccessible(true);
-            int pid = (int) field.get(proc);
-            field.setAccessible(false);
-            return pid;
-        }
-        catch (IllegalAccessException e) {
-            return 0;
-        }
-    }
-
     public int getProcStatus() {
         return procStatus;
     }
-
 
     public void quit() {
         proc.destroy();
@@ -114,7 +92,7 @@ public class UnisonService extends Service {
     public void pause() {
         if (procStatus != PROC_RUNNING) return;
         try {
-            int pid = getProcessPid(proc);
+            int pid = Util.getProcessPid(proc);
             if (pid != 0) {
                 Runtime.getRuntime().exec(new String[]{"kill", "-STOP", Integer.toString(pid)});
                 notifyBuilder.setSmallIcon(R.drawable.wait);
@@ -131,7 +109,7 @@ public class UnisonService extends Service {
     public void resume() {
         if (procStatus != PROC_PAUSED) return;
         try {
-            int pid = getProcessPid(proc);
+            int pid = Util.getProcessPid(proc);
             if (pid != 0) {
                 Runtime.getRuntime().exec(new String[]{"kill", "-CONT", Integer.toString(pid)});
                 notifyBuilder.setSmallIcon(R.drawable.good);

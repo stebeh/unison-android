@@ -1,6 +1,5 @@
 package org.simeon.unison;
 
-import android.app.ActivityManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -19,16 +18,6 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class MainActivity extends AppCompatActivity {
-
-    private boolean isServiceRunning(boolean background) {
-        ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo info : am.getRunningServices(Integer.MAX_VALUE)) {
-            if (info.service.getClassName().equals(
-                    background ? UnisonService.class.getName() : SingleRunService.class.getName()))
-                return true;
-        }
-        return false;
-    }
 
     private void copyBinary(String binaryFile) {
         String outPath = getFilesDir() + "/" + binaryFile;
@@ -67,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
             this.finish();
             return;
         }*/
-        if (isServiceRunning(true)) {
+        if (Util.isServiceRunning(this, UnisonService.class)) {
             startActivity(new Intent(this, ControlActivity.class));
             this.finish();
             return;
