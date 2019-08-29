@@ -27,8 +27,7 @@
 
         <activity
             android:name=".ControlActivity"
-            android:label="Unison (running)"
-            android:excludeFromRecents="true" />
+            android:label="Unison (running)" />
 
         <activity android:name=".ServiceOutputActivity"
             android:configChanges="orientation|screenSize"/>
