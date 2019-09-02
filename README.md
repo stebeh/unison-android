@@ -23,6 +23,11 @@ If your profile has a remote root, you will need to also select an (OpenSSH) key
 * See [todo](todo.md).
 
 
+## Testing
+
+APK binaries, if any, can be found under [releases](https://github.com/simeonkr/unison-android/releases).
+
+
 ## Acknowledgements
 
 [Unison](https://github.com/bcpierce00/unison) is written by Benjamin C. Pierce.
