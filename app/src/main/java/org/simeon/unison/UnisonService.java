@@ -237,21 +237,10 @@ public class UnisonService extends Service {
                         notifyBuilder.setSmallIcon(R.drawable.warning)
                                 .setContentText(getStatusMsg("Synchronization incomplete. See status..."));
                         break;
-                    case STATUS_ERROR:
-                        procStatus = PROC_FINISHED;
-                        notifyBuilder.setSmallIcon(R.drawable.error)
-                                .setContentText(getStatusMsg("Fatal error. See status..."));
-                        break;
-                    case STATUS_KEY_ERROR:
-                        procStatus = PROC_FINISHED;
-                        notifyBuilder.setSmallIcon(R.drawable.error)
-                                .setContentText(getStatusMsg("Fatal error: Invalid key file."));
-                        stopForeground(false);
-                        break;
                     case STATUS_LOST_CONNECTION:
                         procStatus = PROC_FINISHED;
-                        notifyBuilder.setSmallIcon(R.drawable.error)
-                                .setContentText(getStatusMsg("Fatal error. See status..."));
+                        notifyBuilder.setSmallIcon(R.drawable.disconnected)
+                                .setContentText(getStatusMsg("Disconnected"));
                         disconnected = true;
                         if (autoRestart) {
                             reconnectTimer = new Timer();
@@ -263,11 +252,24 @@ public class UnisonService extends Service {
                             }, INIT_RECONNECT_DELAY, SUBSQ_RECONNECT_DELAY);
                         }
                         break;
+                    case STATUS_KEY_ERROR:
+                        procStatus = PROC_FINISHED;
+                        notifyBuilder.setSmallIcon(R.drawable.error)
+                                .setContentText(getStatusMsg("Fatal error: Invalid key file."));
+                        stopForeground(false);
+                        break;
+                    case STATUS_ERROR:
+                        procStatus = PROC_FINISHED;
+                        notifyBuilder.setSmallIcon(R.drawable.error)
+                                .setContentText(getStatusMsg("Fatal error. See status..."));
+                        break;
                 }
 
                 binder.broadcastStatus();
 
                 notifyManager.notify(NOTIFY_ID, notifyBuilder.build());
+
+                break;
             }
         }
     }
